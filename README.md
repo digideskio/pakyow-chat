@@ -1,11 +1,11 @@
-A web-based chat app written using PakyowUI. PakyowUI brings live updating UIs 
-to Pakyow apps without moving logic to the client. Instead, PakyowUI apps are 
-written in a backend-driven style. No JavaScript was required to build this 
-example app (beyond the pakyow.js library bundled with PakyowUI).
+A web-based chat app written using PakyowUI. PakyowUI brings live updating views
+to Pakyow apps without moving logic to the client. Instead, PakyowUI apps are
+written in a traditional backend-driven style. *No JavaScript was required to
+build this example app (beyond the pakyow.js library bundled with PakyowUI).*
 
-Turn off JavaScript in your browser and the app still retains its core 
+Turn off JavaScript support in your browser and the app still retains its core 
 functionality (without the live updates of course). You get this progressive 
-enhancement for free, without having to think about it during development.
+enhancement for free, without thinking about it during development.
 
 Full documentation will be available soon, along with an official release!
 
