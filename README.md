@@ -1,28 +1,36 @@
-This is a Pakyow v0.9 app.
+A web-based chat app written using PakyowUI. PakyowUI brings live updating UIs 
+to Pakyow apps without moving logic to the client. Instead, PakyowUI apps are 
+written in a backend-driven style. No JavaScript was required to build this 
+example app (beyond the pakyow.js library bundled with PakyowUI).
+
+Turn off JavaScript in your browser and the app still retains its core 
+functionality (without the live updates of course). You get this progressive 
+enhancement for free, without having to think about it during development.
+
+Full documentation will be available soon, along with an official release!
 
 # Getting Started
 
-Start the app server:
+Make sure you have a reasonably recent version of Ruby installed (> 2.0), along 
+with RubyGems and Bundler. Then, install the dependencies:
 
-  `pakyow server`
+		bundle install
 
-You'll find your app running at [http://localhost:3000](http://localhost:3000)!
+Next, start the app server:
 
-Need to interact with your app? Fire up a console:
+		bundle exec pakyow s
 
-  `pakyow console`
+You'll find the app running at [http://localhost:3000](http://localhost:3000)!
 
 # Next Steps
 
-The following resources might be handy:
+Read more about the two new libraries:
 
-- [Website](http://pakyow.com)
-- [Warmup](http://pakyow.com/warmup)
-- [Docs](http://pakyow.com/docs)
-- [Code](http://github.com/metabahn/pakyow)
+- [PakyowUI](https://github.com/pakyow/pakyow/tree/master/pakyow-ui)
+- [Pakyow.js](https://github.com/pakyow/pakyow-js)
 
 Want to keep up with the latest development? Follow along:
 
-- [Blog](http://pakyow.com/blog)
-- [Mailing List](http://groups.google.com/group/pakyow)
+- [Gitter](https://gitter.im/pakyow/chat)
+- [Mailing List](http://eepurl.com/_NLlD)
 - [Twitter](http://twitter.com/pakyow)
