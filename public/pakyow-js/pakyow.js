@@ -95,6 +95,7 @@ var sigAttrs = ['data-scope', 'data-prop'];
 pw.node.isSignificant = function(node) {
   var attr;
 
+  //TODO use each
   for(var i = 0; i < sigAttrs.length; i++) {
     attr = sigAttrs[i]
 
@@ -285,30 +286,27 @@ pw.node.bindDataToScope = function (data, scope, node) {
     }
 
     if(typeof v === 'object') {
-      pw.node.bindAttributesToDoc(v, p['doc']);
+      pw.node.bindAttributesToNode(v, p['doc']);
     } else {
-      pw.node.bindValueToDoc(v, p['doc']);
+      pw.node.bindValueToNode(v, p['doc']);
     }
   }
 }
 
-//TODO rename to bindAttributesToNode
-pw.node.bindAttributesToDoc = function (attrs, doc) {
+pw.node.bindAttributesToNode = function (attrs, doc) {
   for(var attr in attrs) {
     var value = attrs[attr];
     if(attr === 'content') {
-      pw.node.bindValueToDoc(value, doc);
+      pw.node.bindValueToNode(value, doc);
       continue;
     }
 
     if(_.isFunction(value)) value = value.call(doc.getAttribute(attr));
-    //TODO what's up with setAttr?
-    !value ? pw.node.removeAttr(doc, attr) : doc.setAttribute(attr, value); //pw.node.setAttr(doc, attr, value);
+    !value ? pw.node.removeAttr(doc, attr) : pw.node.setAttr(doc, attr, value);
   }
 }
 
-//TODO rename to bindValueToNode
-pw.node.bindValueToDoc = function (value, doc) {
+pw.node.bindValueToNode = function (value, doc) {
   if(pw.node.isTagWithoutValue(doc)) return;
 
   //TODO handle other form fields (port from pakyow-presenter)
@@ -371,13 +369,19 @@ pw.node.byAttr = function (node, attr, compareValue) {
 }
 
 pw.node.setAttr = function (node, attr, value) {
-  node.setAttribute(attr, _.map(_.pairs(value), function (pair) {
-    return pair[0] + ':' + pair[1];
-  }).join(';'));
+  node.setAttribute(attr, value);
 }
 
 pw.node.removeAttr = function (node, attr) {
   node.removeAttribute(attr);
+}
+
+pw.node.hasAttr = function (node, attr) {
+  return node.hasAttribute(attr);
+}
+
+pw.node.getAttr = function (node, attr) {
+  return node.getAttribute(attr);
 }
 
 pw.node.all = function (node) {
@@ -405,6 +409,18 @@ pw.node.after = function (node, newNode) {
   node.parentNode.insertBefore(newNode, this.nextSibling);
 }
 
+pw.node.replace = function (node, newNode) {
+  node.parentNode.replaceChild(newNode, node);
+};
+
+pw.node.append = function (node, newNode) {
+  node.appendChild(newNode);
+}
+
+pw.node.prepend = function (node, newNode) {
+  node.insertBefore(newNode, node.firstChild);
+}
+
 pw.node.remove = function (node) {
   node.parentNode.removeChild(node);
 };
@@ -412,17 +428,28 @@ pw.node.remove = function (node) {
 pw.node.text = function (node, value) {
   node.innerText = value;
 };
+
+pw.node.html = function (node, value) {
+  node.innerHTML = value;
+};
+
+pw.node.clear = function (node) {
+  while (node.firstChild) {
+    pw.node.remove(node.firstChild);
+  }
+};
+
+pw.node.title = function (node, value) {
+  var titleNode = node.getElementsByTagName('title')[0];
+
+  if (titleNode) {
+    pw.node.text(titleNode, value);
+  }
+};
 pw.attrs = {};
 
 pw.attrs.init = function (view_or_views) {
-  var views;
-  if (view_or_views instanceof pw_View) {
-    views = [view_or_views];
-  } else {
-    views = view_or_views;
-  }
-
-  return new pw_Attrs(views);
+  return new pw_Attrs(pw.collection.init(view_or_views));
 };
 
 var attrTypes = {
@@ -431,8 +458,8 @@ var attrTypes = {
   mult: ['class']
 };
 
-var pw_Attrs = function (views) {
-  this.views = views;
+var pw_Attrs = function (collection) {
+  this.views = collection.views;
 };
 
 pw_Attrs.prototype.findType = function (attr) {
@@ -446,11 +473,11 @@ pw_Attrs.prototype.findValue = function (view, attr) {
   if (attr === 'class') {
     return view.node.classList;
   } else if (attr === 'style') {
-
+    return view.node.style;
   } else if (this.findType(attr) === 'bool') {
-
+    return pw.node.hasAttr(view.node, attr);
   } else { // just a text attr
-
+    return pw.node.getAttr(view.node, attr);
   }
 };
 
@@ -463,16 +490,24 @@ pw_Attrs.prototype.set = function (attr, value) {
 pw_Attrs.prototype.ensure = function (attr, value) {
   _.each(this.views, function (view) {
     var currentValue = this.findValue(view, attr);
+
     if (attr === 'class') {
       if (!currentValue.contains(value)) {
         currentValue.add(value);
       }
     } else if (attr === 'style') {
-
+      _.each(_.pairs(value), function (kv) {
+        view.node.style[kv[0]] = kv[1];
+      });
     } else if (this.findType(attr) === 'bool') {
-
+      if (!pw.node.hasAttr(view.node, attr)) {
+        pw.node.setAttr(view.node, attr, attr);
+      }
     } else { // just a text attr
-
+      var currentValue = pw.node.getAttr(view.node, attr) || '';
+      if (!currentValue.match(value)) {
+        pw.node.setAttr(view.node, attr, currentValue + value);
+      }
     }
   }, this);
 };
@@ -485,11 +520,15 @@ pw_Attrs.prototype.deny = function (attr, value) {
         currentValue.remove(value);
       }
     } else if (attr === 'style') {
-
+      _.each(_.pairs(value), function (kv) {
+        view.node.style[kv[0]] = view.node.style[kv[0]].replace(kv[1], '');
+      });
     } else if (this.findType(attr) === 'bool') {
-
+      if (pw.node.hasAttr(view.node, attr)) {
+        pw.node.removeAttr(view.node, attr);
+      }
     } else { // just a text attr
-
+      pw.node.setAttr(view.node, attr, pw.node.getAttr(view.node, attr).replace(value, ''));
     }
   }, this);
 };
@@ -502,16 +541,15 @@ pw.state = {};
 pw.state.build = function (sigArr, parentObj) {
   var retState = [];
   for (var i = 0; i < sigArr.length; i++) {
-    var elemState = pw.state.buildForElem(sigArr[i], parentObj);
-    if (!elemState) continue;
-    retState.push(elemState);
+    var nodeState = pw.state.buildForNode(sigArr[i], parentObj);
+    if (!nodeState) continue;
+    retState.push(nodeState);
   }
 
   return retState;
 }
 
-//TODO rename to buildForNode
-pw.state.buildForElem = function (sigTuple, parentObj) {
+pw.state.buildForNode = function (sigTuple, parentObj) {
   var sig = sigTuple[0];
   var obj = {};
 
@@ -527,8 +565,8 @@ pw.state.buildForElem = function (sigTuple, parentObj) {
 }
 
 // creates and returns a new pw_State for the document or node
-pw.state.init = function (elem) {
-  return new pw_State(elem);
+pw.state.init = function (node) {
+  return new pw_State(node);
 }
 
 
@@ -536,27 +574,27 @@ pw.state.init = function (elem) {
   pw_State represents the state for a document or node.
 */
 
-var pw_State = function (elem) {
-  this.initial = pw.state.build(pw.node.significant(elem));
+var pw_State = function (node) {
+  this.initial = pw.state.build(pw.node.significant(node));
   this.current = JSON.parse(JSON.stringify(this.initial));
   this.diffs = [];
 }
 
 // diff the node and capture any changes
-pw_State.prototype.diff = function (elem) {
-  return _.map(_.flatten(pw.state.build(pw.node.significant(pw.node.scope(elem)))), function (elemState) {
-    var last = this.elem(elemState);
+pw_State.prototype.diff = function (node) {
+  return _.map(_.flatten(pw.state.build(pw.node.significant(pw.node.scope(node)))), function (nodeState) {
+    var last = this.node(nodeState);
 
     var diffObj = {
-      elem: elem,
+      node: node,
       guid: pw.util.guid(),
-      scope: elemState.scope,
-      id: elemState.id
+      scope: nodeState.scope,
+      id: nodeState.id
     };
 
-    for (var key in elemState) {
-      if(!last || elemState[key] !== last[key]) {
-        diffObj[key] = elemState[key];
+    for (var key in nodeState) {
+      if(!last || nodeState[key] !== last[key]) {
+        diffObj[key] = nodeState[key];
       }
     }
 
@@ -619,10 +657,9 @@ pw_State.prototype.rollback = function (guid) {
 }
 
 // returns the current state for a node
-//TODO rename to node
-pw_State.prototype.elem = function (elemState) {
+pw_State.prototype.node = function (nodeState) {
   return _.filter(_.flatten(this.current), function (s) {
-    return s.scope === elemState.scope && s.id === elemState.id;
+    return s.scope === nodeState.scope && s.id === nodeState.id;
   })[0];
 }
 /*
@@ -668,19 +705,51 @@ pw_View.prototype.remove = function () {
   pw.node.remove(this.node);
 };
 
-//TODO clear, title
+pw_View.prototype.clear = function () {
+  pw.node.clear(this.node);
+};
+
+pw_View.prototype.title = function (value) {
+  pw.node.title(this.node, value);
+};
 
 pw_View.prototype.text = function (value) {
   pw.node.text(node, value);
 };
 
-//TODO html, append, prepend, after, before, replace
+pw_View.prototype.html = function (value) {
+  pw.node.html(node, value);
+};
+
+pw_View.prototype.after = function (view) {
+  pw.node.after(this.node, view.node);
+}
+
+pw_View.prototype.before = function (view) {
+  pw.node.before(this.node, view.node);
+}
+
+pw_View.prototype.replace = function (view) {
+  pw.node.replace(this.node, view.node);
+}
+
+pw_View.prototype.append = function (view) {
+  pw.node.append(this.node, view.node);
+}
+
+pw_View.prototype.prepend = function (view) {
+  pw.node.prepend(this.node, view.node);
+}
 
 pw_View.prototype.attrs = function () {
   return pw.attrs.init(this);
 };
 
-//TODO scope
+pw_View.prototype.scope = function (name) {
+  return _.map(pw.node.byAttr(this.node, 'data-scope', name), function (node) {
+    return pw.view.init(node);
+  });
+};
 
 pw_View.prototype.prop = function (name) {
   return _.map(pw.node.byAttr(this.node, 'data-prop', name), function (node) {
@@ -688,17 +757,45 @@ pw_View.prototype.prop = function (name) {
   });
 };
 
-//TODO component, with, match, for, repeat
-
-pw_View.prototype.bind = function (data) {
-  pw.node.bind(data, this.node);
+pw_View.prototype.component = function (name) {
+  return _.map(pw.node.byAttr(this.node, 'data-ui', name), function (node) {
+    return pw.view.init(node);
+  });
 };
 
-//TODO apply
+pw_View.prototype.with = function (cb) {
+  pw.node.with(this.node, cb);
+};
+
+pw_View.prototype.match = function (data) {
+  pw.node.match(this.node, data);
+};
+
+pw_View.prototype.for = function (data, cb) {
+  pw.node.for(this.node, data, cb);
+};
+
+pw_View.prototype.repeat = function (data, cb) {
+  pw.node.repeat(this.node, data, cb);
+};
+
+pw_View.prototype.bind = function (data, cb) {
+  pw.node.bind(data, this.node, cb);
+};
+
+pw_View.prototype.apply = function (data, cb) {
+  pw.node.apply(data, this.node, cb);
+};
 pw.collection = {};
 
-pw.collection.init = function (views, selector) {
-  return new pw_Collection(views, selector);
+pw.collection.init = function (view_or_views, selector) {
+  if (view_or_views instanceof pw_Collection) {
+    return view_or_views
+  } else if (view_or_views.constructor !== Array) {
+    view_or_views = [view_or_views];
+  }
+
+  return new pw_Collection(view_or_views, selector);
 };
 
 pw.collection.fromNodes = function (nodes, selector) {
@@ -760,7 +857,23 @@ pw_Collection.prototype.remove = function() {
   });
 };
 
-//TODO clear, text, html
+pw_Collection.prototype.clear = function() {
+  _.each(this.views, function (view) {
+    view.clear();
+  });
+};
+
+pw_Collection.prototype.text = function(value) {
+  _.each(this.views, function (view) {
+    view.text(value);
+  });
+};
+
+pw_Collection.prototype.html = function(value) {
+  _.each(this.views, function (view) {
+    view.html(value);
+  });
+};
 
 pw_Collection.prototype.append = function (data) {
   var last = this.views[this.views.length - 1];
@@ -796,7 +909,17 @@ pw_Collection.prototype.prop = function (name) {
   );
 };
 
-//TODO component, with
+pw_Collection.prototype.component = function (name) {
+  return pw.collection.init(
+    _.reduce(this.views, [], function (views, view) {
+      return views.concat(view.component(name));
+    })
+  );
+};
+
+pw_Collection.prototype.with = function (cb) {
+  pw.node.with(this.views, cb);
+};
 
 pw_Collection.prototype.for = function(data, fn) {
   if(!(data instanceof Array)) data = [data];
