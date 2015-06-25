@@ -1,6 +1,6 @@
 GIT
   remote: git://github.com/pakyow/pakyow.git
-  revision: 886f7db5122e2524f45bf009328fae16014b0c09
+  revision: 37da64da347c09116276b4065eec278cbbadb60f
   specs:
     pakyow (0.9.1)
       bundler (>= 1.3.0, < 2.0)
@@ -47,7 +47,7 @@ GEM
   remote: https://rubygems.org/
   specs:
     addressable (2.3.8)
-    celluloid (0.17.0.pre15)
+    celluloid (0.17.0.rc1)
       bundler
       celluloid-essentials
       celluloid-extras
@@ -101,7 +101,7 @@ GEM
       timers (~> 4.0.0)
     css_parser (1.3.6)
       addressable
-    dotenv (2.0.1)
+    dotenv (2.0.2)
     hitimes (1.2.2)
     htmlentities (4.3.3)
     mail (2.6.3)
@@ -117,7 +117,7 @@ GEM
       htmlentities (>= 4.0.0)
     puma (2.11.3)
       rack (>= 1.1, < 2.0)
-    rack (1.6.1)
+    rack (1.6.4)
     rake (10.4.2)
     redis (3.2.1)
     rspec-logsplit (0.1.3)
