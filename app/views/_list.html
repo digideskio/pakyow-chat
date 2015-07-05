@@ -13,3 +13,12 @@
     </div>
   </div>
 </div>
+
+<script>
+  pw.component.register('chat', function (view, config) {
+    this.message = function (channel, payload) {
+      console.log('message [' + channel + ']:');
+      console.log(payload);
+    }
+  });
+</script>
