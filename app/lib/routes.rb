@@ -16,7 +16,7 @@ Pakyow::App.routes do
       message = data(:message).create(params[:message])
 
       # example of sending an instruction directly to a subscribed component
-      # ui.component(:chat).scope(:message).prepend(message)
+      # ui.component(:chat).prepend(message)
 
       # example of sending a custom payload to a subscribed component
       # ui.component(:chat).push(:received)
